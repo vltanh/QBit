@@ -13,11 +13,11 @@ public:
 	QFloat(const QFloat& n) : QBit(n) {}
 	QFloat(const QBit& n) : QBit(n) {}
 
-	string toDec();
-	QFloat fromDec(string);
+	//string toDec();
+	//QFloat fromDec(string);
 
-	string toBin();
-	QFloat fromBin(string);
+	//string toBin();
+	//QFloat fromBin(string);
 
 	QFloat& operator =(const QFloat& n) {
 		QBit::operator=(n);

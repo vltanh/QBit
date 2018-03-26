@@ -20,8 +20,6 @@ public:
 	string toHex();
 	friend QInt fromHex(string);
 
-	void input();
-
 	QInt& operator =(const QInt& n) {
 		QBit::operator=(n);
 		return (*this);
@@ -42,6 +40,17 @@ public:
 	bool neg() const {
 		return data[BYTESZ - 1] & 1;
 	}
+
+	void print() {
+		cout << right;
+		cout << setw(30) << toDec() << ' ';
+		cout << setw(130) << toBin() << ' ';
+		cout << setw(30) << toHex() << endl;
+		cout << left;
+	}
+
+	friend QInt fromString(string n, string b);
+	string toString(string b);
 };
 
 pair<QInt,QInt> QInt::operator *(const QInt& n) {
@@ -103,10 +112,13 @@ pair<QInt,QInt> QInt::operator /(const QInt& n) {
 // Output: QInt
 QInt fromBin(string bin) {
 	QInt res;
-	for (int i = 0; i < QBit::TYPESZ * QBit::BYTESZ; i++) {
-		int dataId = QBit::BYTESZ - 1 - i / QBit::TYPESZ;
-		int bitId = i % QBit::TYPESZ;
+	int i = bin.size() - 1;
+	while (i > -1) {
+		int pos = (bin.size() - 1) - i;
+		int dataId = pos / QBit::TYPESZ;
+		int bitId = (QBit::TYPESZ - 1) - pos % QBit::TYPESZ;
 		res.data[dataId] = res.data[dataId] | ((bin[i] - '0') << bitId);
+		i--;
 	}
 	return res;
 }
@@ -115,12 +127,16 @@ QInt fromBin(string bin) {
 // Input: QInt
 // Output: string of '0's and '1's
 string QInt::toBin() {
-	string res(TYPESZ*BYTESZ, '0');
-	for (int i = 0; i < TYPESZ*BYTESZ; i++) {
+	string res;
+	int i = 0;
+	while (((data[BYTESZ - 1 - i / TYPESZ] >> (i % TYPESZ)) & 1) == 0) i++;
+	for (; i < TYPESZ*BYTESZ; i++) {
 		int dataId = BYTESZ - 1 - i / TYPESZ;
 		int bitId = i % TYPESZ;
-		res[i] = ((data[dataId] >> bitId) & 1) + '0';
+		res = res + char(((data[dataId] >> bitId) & 1) + '0');
 	}
+	if (res.size() == 0)
+		res = "0";
 	return res;
 }
 
@@ -131,13 +147,12 @@ QInt fromHex(string hex) {
 	for (int i = 0; i < hex.size(); i++)
 		if (hex[i] <= 'z' && hex[i] >= 'a')
 			hex[i] = hex[i] - 'a' + 'A';
-
 	QInt res;
 	for (int i = 0; i < hex.size(); i++) {
 		int n = (hex[i] >= '0' && hex[i] <= '9') ? (hex[i] - '0') : (hex[i] - 'A' + 10);
 		for (int j = 0; j < 4; j++) {
 			int bit = n % 2;
-			int pos = 4 * i + (4 - j - 1);
+			int pos = 4 * (i + (QBit::TYPESZ*QBit::BYTESZ >> 2) - hex.size()) + (4 - j - 1);
 			int dataId = QBit::BYTESZ - 1 - pos / QBit::TYPESZ;
 			int bitId = pos % QBit::TYPESZ;
 			res.data[dataId] = res.data[dataId] | (bit << bitId);
@@ -151,24 +166,29 @@ QInt fromHex(string hex) {
 // Input: QInt
 // Output: string of hexadecimal ('0' to '9' and 'A' or 'a' to 'F' or 'f')
 string QInt::toHex() {
+	// Create map from n in [10,15] to ['A', 'F']
 	string dict(16, 0);
 	for (int i = 0; i < 10; i++)
 		dict[i] = i + '0';
 	for (int i = 10; i < 16; i++)
 		dict[i] = i - 10 + 'A';
 
-	string res((TYPESZ * BYTESZ) >> 2, '0');
-	for (int i = 0; i < res.size(); i++) {
+	int flag = false;
+	//string res((TYPESZ * BYTESZ) >> 2, '0');
+	string res;
+	for (int i = 0; i < ((TYPESZ * BYTESZ) >> 2); i++) {
 		int val = 0;
 		for (int j = 0; j < 4; j++) {
 			int pos = 4 * i + (4 - j - 1);
 			int dataId = BYTESZ - 1 - pos / 8;
 			int bitId = pos % 8;
 			int bit = ((data[dataId] >> bitId) & 1);
-
 			val += (bit << j);
 		}
-		res[i] = dict[val];
+		if (val != 0 || flag) {
+			res = res + dict[val];
+			flag = true;
+		}
 	}
 	return res;
 }
@@ -226,12 +246,16 @@ QInt QInt::operator -(const QInt& b) {
 	return (*this) + (QInt(~c) + fromDec("1"));
 }
 
-void QInt::input() {
-	string s;
-	cin >> s;
-	QInt c = fromDec(s);
-	for (int i = 0; i < BYTESZ; i++)
-		data[i] = c.data[i];
+QInt::QInt(int n) { operator=(fromDec(to_string(n))); }
+
+QInt fromString(string n, string b) {
+	if (b == "2") return fromBin(n);
+	else if (b == "10") return fromDec(n);
+	else if (b == "16") return fromHex(n);
 }
 
-QInt::QInt(int n) { operator=(fromDec(to_string(n))); }
+string QInt::toString(string b) {
+	if (b == "2") return toBin();
+	else if (b == "10") return toDec();
+	else if (b == "16") return toHex();
+}
