@@ -18,6 +18,15 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="QBit.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="QInt.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Int.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="QBit.h">
@@ -27,12 +36,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="QInt.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Float.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="QFloat.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,95 +1,30 @@
-#pragma once
+﻿#pragma once
 
 #include <iomanip>
 using namespace std;
 
 class QBit {
 public:
-	static const int BYTESZ = 16;
-	static const int TYPESZ = 8;
+	static const int BYTESZ = 16;	// Kích thước số nguyên (16 bytes)
+	static const int TYPESZ = 8;	// Kích thước một phần tử lưu trữ (unsigned char: 1 bytes)
 protected:
-	unsigned char data[BYTESZ];
+	unsigned char data[BYTESZ];	// Lưu trữ 128 bit bằng 16 unsigned char * 8 bit
 public:
-	QBit() {
-		for (int i = 0; i < BYTESZ; i++)
-			data[i] = 0;
-	}
+	// Nhóm hàm khởi tạo
+	QBit();
+	QBit(const QBit& n);
 
-	QBit(const QBit& n) {
-		for (int i = 0; i < BYTESZ; i++)
-			data[i] = n.data[i];
-	}
+	// Nhóm hàm phụ trợ
+	void setBit(int pos, int bit);
+	int getBit(int pos) const;
 
-	QBit& operator =(const QBit& n) {
-		for (int i = 0; i < BYTESZ; i++)
-			data[i] = n.data[i];
-		return (*this);
-	}
-
-	void setBit(int pos, int x) {
-
-	}
-
-	int getBit(int pos) {
-	
-	}
-
-	QBit operator ~() {
-		QBit res = *this;
-		for (int i = 0; i < BYTESZ; i++)
-			res.data[i] = ~data[i];
-		return res;
-	}
-
-	QBit operator <<(int k) {
-		QBit res = *this;
-		while (k--) {
-			int leftover;
-			int carry = 0;
-			for (int i = 0; i < BYTESZ; i++) {
-				leftover = res.data[i] & 1;
-				res.data[i] >>= 1;
-				res.data[i] ^= (-carry ^ res.data[i]) & (1UL << (TYPESZ - 1));
-				carry = leftover;
-			}
-		}
-		return res;
-	}
-
-	QBit operator >>(int k) {
-		QBit res = *this;
-		while (k--) {
-			int leftover;
-			int carry = 0;
-			for (int i = BYTESZ - 1; i > -1; i--) {
-				leftover = (res.data[i] & (1 << (TYPESZ - 1))) >> (TYPESZ - 1);
-				res.data[i] <<= 1;
-				res.data[i] ^= (-carry ^ res.data[i]) & (1UL << 0);
-				carry = leftover;
-			}
-		}
-		return res;
-	}
-
-	QBit operator |(const QBit& n) {
-		QBit res = *this;
-		for (int i = 0; i < BYTESZ; i++)
-			res.data[i] |= n.data[i];
-		return res;
-	}
-
-	QBit operator &(const QBit& n) {
-		QBit res = *this;
-		for (int i = 0; i < BYTESZ; i++)
-			res.data[i] &= n.data[i];
-		return res;
-	}
-
-	QBit operator ^(const QBit& n) {
-		QBit res = *this;
-		for (int i = 0; i < BYTESZ; i++)
-			res.data[i] ^= n.data[i];
-		return res;
-	}
+	// Nhóm toán tử
+	QBit& operator =(const QBit& n);
+	QBit operator <<(int k) const;
+	QBit operator >>(int k) const;
+	QBit operator ~() const;
+	QBit operator |(const QBit& n) const;
+	QBit operator &(const QBit& n) const;
+	QBit operator ^(const QBit& n) const;
 };
 

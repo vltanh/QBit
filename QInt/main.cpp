@@ -9,7 +9,6 @@ using namespace std;
 
 #include "QBit.h"
 #include "QInt.h"
-#include "Float.h"
 
 string operate(const vector<string>& opt) {
 	if (opt[2] == ">>" || opt[2] == "<<") {
@@ -18,6 +17,10 @@ string operate(const vector<string>& opt) {
 
 		if (opt[2] == ">>") return static_cast<QInt>(a >> b).toString(opt[0]);
 		if (opt[2] == "<<") return static_cast<QInt>(a << b).toString(opt[0]);
+	}
+	else if (opt[1] == "~") {
+		QInt a = fromString(opt[2], opt[0]);
+		return static_cast<QInt>(~a).toString(opt[0]);
 	}
 	else {
 		QInt a, b;
@@ -43,6 +46,9 @@ int main(int argc, char** argv) {
 	ifstream inp(argv[1]);
 	ofstream out(argv[2]);
 
+	//ifstream inp("input.txt");
+	//ofstream out("output.txt");
+
 	string cmd;
 	while (getline(inp, cmd)) {
 		vector<string> opt;
@@ -53,50 +59,9 @@ int main(int argc, char** argv) {
 		}
 		opt.push_back(cmd);
 		
-		if (opt.size() == 4)
+		if (opt.size() == 4 || opt[1] == "~")
 			out << operate(opt) << endl;
 		else if (opt.size() == 3)
 			out << convert(opt) << endl;
 	}
-
-	/*cout << QBit::BYTESZ << " byte(s)" << endl;
-	cout << "Input: ";
-	string s;
-	cin >> s;
-	QInt a = fromHex(s);
-	string bin = a.toBin();
-	string hex = a.toHex();
-	string dec = fromHex(hex).toDec();
-	cout << "Bin: \t" << bin << endl;
-	cout << "Hex: \t" << hex << endl;
-	cout << "Dec: \t" << dec << endl;
-	cout << endl;*/
-
-	/*QInt a, b;
-	string s1, s2;
-	cin >> s1 >> s2;
-	a = fromDec(s1); b = fromDec(s2);
-	cout << "a:"; a.print();
-	cout << "b:"; b.print();
-	cout << "--------------------------------------------------" << endl;
-	cout << "+:"; (a + b).print();
-	cout << "-:"; (a - b).print();
-	cout << "*:"; (a * b).second.print();
-	cout << "/:"; (a / b).first.print();
-	cout << "r:"; (a / b).second.print();
-	cout << "l:"; static_cast<QInt>(a << 2).print();
-	cout << "r:"; static_cast<QInt>(a >> 2).print();
-	cout << "&:"; static_cast<QInt>(a & b).print();
-	cout << "|:"; static_cast<QInt>(a | b).print();
-	cout << "^:"; static_cast<QInt>(a ^ b).print();
-	cout << "~:"; static_cast<QInt>(~a).print();
-	cout << "~:"; static_cast<QInt>(~b).print();*/
-
-	/*string s1, s2;
-	cin >> s1 >> s2;
-	Float f1(s1), f2(s2);
-	(f1 + f2).print(); cout << endl;
-	(f1 - f2).print(); cout << endl;
-	f2.doubled().print(); cout << endl;
-	f2.halved().print(); cout << endl;*/
 }
