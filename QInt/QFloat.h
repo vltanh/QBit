@@ -1,34 +1,28 @@
-#pragma once
+﻿#pragma once
 
 #include "QBit.h"
-#include "Float.h"
 
 class QFloat : public QBit {
-private:
-	static const int S;
-	static const int E;
 public:
+	// Nhóm hàm khởi tạo
 	QFloat() : QBit() {}
 
-	QFloat(const QFloat& n) : QBit(n) {}
-	QFloat(const QBit& n) : QBit(n) {}
+	// Nhóm hàm phụ trợ
+	bool isNegative() const;
+	bool isZero() const;
 
-	//string toDec();
-	//QFloat fromDec(string);
+	// Nhóm các toán tử
+	QFloat& operator = (const QFloat& f);
+	QFloat operator + (const QFloat&);
+	QFloat operator - (const QFloat&);
+	QFloat operator * (const QFloat&);
+	QFloat operator / (const QFloat&);
 
-	//string toBin();
-	//QFloat fromBin(string);
-
-	QFloat& operator =(const QFloat& n) {
-		QBit::operator=(n);
-		return (*this);
-	}
-
-	QFloat operator +(const QFloat&);
-	QFloat operator -(const QFloat&);
-	//pair<QInt, QInt> operator *(const QInt&);
-	//pair<QInt, QInt> operator /(const QInt&);
-
-	QFloat operator !();
-	bool neg();
+	// Nhóm hàm chuyển đổi
+	string toDec();
+	friend QFloat QFloatfromBin(string);
+	void strDecToQFloat(string number);
+	string DecToBinary();
 };
+
+QFloat QFloatfromBin(string);

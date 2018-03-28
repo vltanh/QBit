@@ -1,5 +1,4 @@
 ﻿#include "QInt.h"
-#include "Int.h"
 
 //  -------------------
 // | Nhóm hàm khởi tạo |
@@ -8,6 +7,10 @@
 // Khởi tạo từ số nguyên
 QInt::QInt(int n) { 
 	operator=(fromDec(to_string(n))); 
+}
+
+QInt::QInt(const Int& n) {
+	operator=(fromDec(string(n)));
 }
 
 //  ---------------------------------------------------
@@ -93,6 +96,12 @@ string QInt::toString(string b) const {
 // Nhập từ hệ nhị phân
 QInt fromBin(string bin) {
 	QInt res;
+	int pos = 0;
+	for (int i = bin.size() - 1; i > -1; i--)
+		res.setBit(pos++, bin[i] - '0');
+	return res;
+
+	/*QInt res;
 	int i = bin.size() - 1;
 	while (i > -1) {
 		int pos = (bin.size() - 1) - i;
@@ -101,7 +110,7 @@ QInt fromBin(string bin) {
 		res.data[dataId] = res.data[dataId] | ((bin[i] - '0') << bitId);
 		i--;
 	}
-	return res;
+	return res;*/
 }
 
 // Nhập từ hệ thập lục phân
@@ -112,17 +121,29 @@ QInt fromHex(string hex) {
 			hex[i] = hex[i] - 'a' + 'A';
 	
 	QInt res;
+	int pos = 0;
+	for (int i = hex.size() - 1; i > -1; i--) {
+		int n = (hex[i] >= '0' && hex[i] <= '9') ? (hex[i] - '0') : (hex[i] - 'A' + 10);
+		for (int j = 0; j < 4; j++) {
+			int bit = n & 1;
+			res.setBit(pos, bit);
+			pos++;
+			n = n >> 1;
+		}
+	}
+
+	/*QInt res;
 	for (int i = 0; i < hex.size(); i++) {
 		int n = (hex[i] >= '0' && hex[i] <= '9') ? (hex[i] - '0') : (hex[i] - 'A' + 10);
 		for (int j = 0; j < 4; j++) {
 			int bit = n % 2;
-			int pos = 4 * (i + (QBit::TYPESZ*QBit::BYTESZ >> 2) - hex.size()) + (4 - j - 1);
+			int pos = ((i + (QBit::TYPESZ*QBit::BYTESZ >> 2) - hex.size()) << 2) + (4 - j - 1);
 			int dataId = QBit::BYTESZ - 1 - pos / QBit::TYPESZ;
 			int bitId = pos % QBit::TYPESZ;
 			res.data[dataId] = res.data[dataId] | (bit << bitId);
 			n = n / 2;
 		}
-	}
+	}*/
 	return res;
 }
 
@@ -136,15 +157,23 @@ QInt fromDec(string s) {
 	bool sign = dec.isNegative();
 
 	QInt res;
+	int pos = 0;
+	while (pos < QBit::TYPESZ * QBit::BYTESZ) {
+		dec = dec.halved(r);
+		res.setBit(pos, r);
+		pos++;
+	}
+
+	/*QInt res;
 	for (int i = 0; i < QBit::TYPESZ*QBit::BYTESZ; i++) {
 		dec = dec.halved(r);
 		int dataId = i / QBit::TYPESZ;
 		int bitId = i % QBit::TYPESZ;
 		res.data[dataId] |= (r << (QBit::TYPESZ - 1 - bitId));
-	}
+	}*/
 
 	// Nếu là số âm, chuyển sang dạng bù 2
-	if (sign) res = QInt(~res) + fromDec("1");
+	if (sign) res = QInt(~res) + QInt(1);
 	return res;
 }
 

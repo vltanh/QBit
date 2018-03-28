@@ -88,8 +88,8 @@ Int Int::operator + (const Int& n) const {
 
 // Toán tử trừ
 Int Int::operator - (const Int& n) const {
-	Int a = *this;
-	Int b = n;
+	Int a = !(*this); bool s1 = this->isNegative();
+	Int b = !n; bool s2 = n.isNegative();
 	Int c;
 
 	// Nếu a >= b, trả về a - b
@@ -173,6 +173,7 @@ Int Int::tenth(int k) const {
 	if (k <= 0) return *this;
 	Int res = *this;
 	res.Digit.erase(res.Digit.begin(), res.Digit.begin() + k);
+	if (res.Digit.size() == 0) res.Digit.push_back(0);
 	return res;
 }
 
@@ -180,6 +181,13 @@ Int Int::tenth(int k) const {
 Int Int::operator !() const {
 	Int res = *this;
 	res.sign = false;
+	return res;
+}
+
+// Toán tử đổi dấu
+Int Int::operator ~() const {
+	Int res = *this;
+	res.sign = ~res.sign;
 	return res;
 }
 
@@ -232,6 +240,16 @@ bool Int::operator <= (const Int& n) const {
 // Kiểm tra số âm
 bool Int::isNegative() const {
 	return sign; 
+}
+
+// Kiểm tra số lẻ
+bool Int::isOdd() const {
+	return Digit[0] % 2 != 0;
+}
+
+// Độ dài
+int Int::length() const {
+	return Digit.size();
 }
 
 // Nhập số

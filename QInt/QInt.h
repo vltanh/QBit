@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "QBit.h"
+#include "Int.h"
 
 class QInt : public QBit {
 public:
@@ -9,6 +10,7 @@ public:
 	QInt(const QInt& n) : QBit(n) {}
 	QInt(const QBit& n) : QBit(n) {}
 	QInt(int n);
+	QInt(const Int&);
 
 	// Nhóm hàm biểu diễn ở các hệ cơ số dưới dạng chuỗi
 	string toDec() const;

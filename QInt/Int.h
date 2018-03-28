@@ -19,6 +19,8 @@ public:
 	void input();
 	void print() const;
 	bool isNegative() const;
+	bool isOdd() const;
+	int length() const;
 	int operator[](int i) const;
 	
 	// Nhóm các toán tử
@@ -30,6 +32,7 @@ public:
 	Int tenth(int k) const;
 	Int operator <<(int k) const;
 	Int operator !() const;
+	Int operator ~() const;
 
 	// Nhóm so sánh
 	bool operator == (const Int& n) const;
