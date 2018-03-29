@@ -36,6 +36,68 @@ vector <bool> subBit(vector <bool> s1, vector <bool> s2, bool &carry) {
 	return s;
 }
 
+// Nhân hai dãy bit
+vector<bool> mulBit(const vector<bool>& s1, const vector<bool>& s2) {
+	vector<bool> A(114, 0);
+	vector<bool> Q = s1;
+	int q = 0;
+	vector<bool> M = s2;
+
+	for (int i = 0; i < 114; i++) {
+		if (Q.back() ^ q) {
+			bool carry = 0;
+			if (q) A = addBit(A, M, carry);
+			else A = subBit(A, M, carry);
+		}
+
+		bool carry = A.back();
+		A.pop_back();
+		A.insert(A.begin(), A[0]);
+
+		q = Q.back();
+		Q.pop_back();
+		Q.insert(Q.begin(), carry);
+	}
+
+	A.insert(A.end(), Q.begin(), Q.end());
+	return A;
+}
+
+// Chia hai dãy bit
+
+pair<vector<bool>, vector<bool>> divBit(vector<bool> s1, vector<bool> s2) {
+	int n = max(s1.size(), s2.size());
+
+	vector<bool> A(n, 0);
+	vector<bool> Q = s1;
+	vector<bool> M = s2;
+
+	while (Q.size() < n) Q.insert(Q.begin(), 0);
+	while (M.size() < n) M.insert(M.begin(), 0);
+
+	for (int i = 0; i < n; i++) {
+		int carry = Q[0];
+		A.erase(A.begin());
+		A.push_back(carry);
+		Q.erase(Q.begin());
+		Q.push_back(0);
+
+		bool c = 0;
+		A = subBit(A, M, c);
+
+		if (A[0] == 1) {
+			Q[Q.size() - 1] = 0;
+			bool c = 0;
+			A = addBit(A, M, c);
+		}
+		else {
+			Q[Q.size() - 1] = 1;
+		}
+	}
+
+	return { Q, A };
+}
+
 // Lấy bit thứ i từ trái sang của số nguyên x
 int getBitInt(int x, int i) {
 	return ((x >> (31 - i % 32)) & 1);
@@ -207,9 +269,31 @@ string toStrBit(string number, int &exp) {
 	return res;
 }
 
+//  -------------------
+// | Nhóm hàm khởi tạo |
+//  -------------------
+
+QFloat::QFloat(string dec) : QBit() {
+	if (dec == "Inf" || dec == "-Inf") {
+		data[0] = data[1] = (1 << 8) - 1;
+		if (dec[0] != '-')
+			data[0] = data[0] & ((1 << 7) - 1);
+	}
+	else if (dec == "NaN") {
+		data[0] = data[1] = (1 << 8) - 1;
+		if (dec[0] != '-')
+			data[0] = data[0] & ((1 << 7) - 1);
+		data[15] |= 1;
+	}
+	else
+		operator =(strDecToQFloat(dec));
+}
+
 //  ------------------
 // | Nhóm hàm phụ trợ |
 //  ------------------
+
+// Kiểm tra số âm
 bool QFloat::isNegative() const {
 	return getBit(0);
 }
@@ -222,6 +306,28 @@ bool QFloat::isZero() const {
 	return true;
 }
 
+// Kiểm tra số là số vô cực
+bool QFloat::isInf() const {
+	for (int i = 1; i <= 15; i++)
+		if (getBit(i) != 1)
+			return false;
+	for (int i = 2; i < 16; i++)
+		if (data[i] != 0)
+			return false;
+	return true;
+}
+
+// Kiểm tra là số báo lỗi
+bool QFloat::isNaN() const {
+	for (int i = 1; i <= 15; i++)
+		if (getBit(i) != 1)
+			return false;
+	for (int i = 2; i < 16; i++)
+		if (data[i] != 0)
+			return true;
+	return false;
+}
+
 //  ------------------
 // | Nhóm các toán tử |
 //  ------------------
@@ -232,51 +338,24 @@ QFloat& QFloat::operator = (const QFloat& f) {
 	return (*this);
 }
 
-void QFloat::strDecToQFloat(string number) {
-	if (number[0] == '-') {
-		setBit(0, 1);
-		number.erase(0, 1);
-	}
-	else setBit(0, 0);
-	if (isZeroStr(number)) {
-		*this = QFloat();
-		return;
-	}
-
-	int exp;
-	string sign = toStrBit(number, exp);
-
-	for (int i = 1; i <= 15; i++)
-		setBit(i, getBitInt(exp, 31 - 15 + i));
-
-	for (int i = 15 + 1; i < 15 + 112 + 1; i++)
-		setBit(i, sign[i - 15] - '0');
-}
-
-string QFloat::DecToBinary() {
-	string s;
-	for (int i = 0; i < 16; i++) {
-		for (int j = 7; j >= 0; --j)
-			s += ((this->data[i] >> j) & 1) + '0';
-	}
-	return s;
-}
-
-QFloat QFloatfromBin(string bin) {
-	QFloat res;
-	int pos = 0;
-	for (int i = 0; i < bin.size(); i++)
-		res.setBit(pos++, bin[i] - '0');
-	return res;
-}
-
 // Phép tính cộng trên QFloat
 QFloat QFloat::operator + (const QFloat &T) {
-	QFloat ans;
-
+	// Nếu 1 trong 2 là số lỗi thì trả về số lỗi
+	if (isNaN() || T.isNaN()) return QFloat("NaN");
+	// Nếu cả hai là số vô cực
+	if (isInf() && T.isInf()) {
+		if (isNegative() && T.isNegative()) return QFloat("-Inf");
+		if (!isNegative() && !T.isNegative()) return QFloat("Inf");
+		return QFloat("NaN");
+	}
+	// Nếu một trong hai là số vô cực
+	if ((isInf() && isNegative()) || (T.isInf() && T.isNegative())) return QFloat("-Inf");
+	if ((isInf() && !isNegative()) || (T.isInf() && !T.isNegative())) return QFloat("Inf");
 	// Nếu 1 trong 2 số là 0, trả về số còn lại
 	if (T.isZero()) return *this;
 	if (this->isZero()) return T;
+
+	QFloat ans;
 
 	// Lấy phần dấu
 	bool sign1 = this->getBit(0);
@@ -457,40 +536,17 @@ QFloat QFloat::operator - (const QFloat &T) {
 	return *this + X;
 }
 
-vector<bool> mulBit(const vector<bool>& s1, const vector<bool>& s2) {
-	vector<bool> A(114, 0);
-	vector<bool> Q = s1;
-	int q = 0;
-	vector<bool> M = s2;
-
-	for (int i = 0; i < 114; i++) {
-		if (Q.back() ^ q) {
-			bool carry = 0;
-			if (q) A = addBit(A, M, carry);
-			else A = subBit(A, M, carry);
-		}
-
-		bool carry = A.back();
-		A.pop_back();
-		A.insert(A.begin(), A[0]);
-
-		q = Q.back();
-		Q.pop_back();
-		Q.insert(Q.begin(), carry);
-	}
-
-	A.insert(A.end(), Q.begin(), Q.end());
-	return A;
-}
-
-void print(vector<bool> s) {
-	for (bool b : s)
-		cout << (int)b;
-	cout << endl;
-}
-
 // Phép tính nhân trên QFloat
 QFloat QFloat::operator * (const QFloat &T) {
+	// Nếu 1 trong 2 là số báo lỗi
+	if (isNaN() || T.isNaN()) return QFloat("NaN");
+	// Nếu là vô cực nhân 0
+	if ((T.isZero() && isInf()) || (isZero() && isInf())) return QFloat("NaN");
+	// Nếu là vô cực nhân một số
+	if (isInf() || T.isInf()) {
+		if (isNegative() ^ T.isNegative()) return QFloat("-Inf");
+		return QFloat("Inf");
+	}
 	// Nếu 1 trong 2 số là 0, trả về 0
 	if (T.isZero() || this->isZero()) return QFloat();
 
@@ -525,7 +581,7 @@ QFloat QFloat::operator * (const QFloat &T) {
 	// Nhân hai phần trị bằng Booth
 	s = mulBit(s1, s2);
 	// Phần mũ bằng tổng mũ thêm 2 bit khi nhân
-	e = e1 + e2 - ((1 << 14) - 1) + 4;
+	e = e1 + e2 + 4;
 	// Phần dấu bằng 0 nếu cùng dấu, 1 nếu khác
 	sign = sign1 ^ sign2;
 
@@ -543,7 +599,15 @@ QFloat QFloat::operator * (const QFloat &T) {
 			e--;
 			break;
 		}
+
+		// Trường hợp số không chuẩn
+		if (e <= (1 << 14) - 1) {
+			e = (1 << 14) - 1;
+			break;
+		}
 	}
+
+	e -= ((1 << 14) - 1);
 
 	// Đặt phần dấu cho kết quả
 	ans.setBit(0, sign);
@@ -561,42 +625,23 @@ QFloat QFloat::operator * (const QFloat &T) {
 	return ans;
 }
 
-pair<vector<bool>, vector<bool>> divBit(vector<bool> s1, vector<bool> s2) {
-	int n = max(s1.size(), s2.size());
-
-	vector<bool> A(n, 0);
-	vector<bool> Q = s1;
-	vector<bool> M = s2;
-
-	while (Q.size() < n) Q.insert(Q.begin(), 0);
-	while (M.size() < n) M.insert(M.begin(), 0);
-
-	for (int i = 0; i < n; i++) {
-		int carry = Q[0];
-		A.erase(A.begin());
-		A.push_back(carry);
-		Q.erase(Q.begin());
-		Q.push_back(0);
-
-		bool c = 0;
-		A = subBit(A, M, c);
-
-		if (A[0] == 1) {
-			Q[Q.size() - 1] = 0;
-			bool c = 0;
-			A = addBit(A, M, c);
-		}
-		else {
-			Q[Q.size() - 1] = 1;
-		}
-	}
-
-	return { Q, A };
-}
-
 // Phép tính chia trên QFloat
 QFloat QFloat::operator / (const QFloat &T) {
+	// Nếu 1 trong 2 là NaN, báo lỗi
+	if (isNaN() || T.isNaN()) return QFloat("NaN");
+	// a / 0 = Undefined
+	if (T.isZero()) return QFloat("NaN");
+	// 0 / a = 0 (a khác 0)
 	if (isZero()) return QFloat();
+	// oo / oo = Undefined
+	if (isInf() && T.isInf()) return QFloat("NaN");
+	// oo / a = oo (xét dấu)
+	if (isInf()) {
+		if (T.isNegative() ^ isNegative()) return QFloat("-Inf");
+		return QFloat("Inf");
+	}
+	// a / oo = 0 (a khác vô cực)
+	if (T.isInf()) return QFloat();
 
 	QFloat ans;
 
@@ -662,8 +707,56 @@ QFloat QFloat::operator / (const QFloat &T) {
 	return ans;
 }
 
+// Hàm nhập QFloat dưới dạng chuỗi thập phân
+QFloat& QFloat::strDecToQFloat(string number) {
+	if (number == "Inf" || number == "-Inf") {
+		data[0] = data[1] = (1 << 8) - 1;
+		if (number[0] != '-')
+			data[0] = data[0] & ((1 << 7) - 1);
+		return *this;
+	}
+	else if (number == "NaN") {
+		data[0] = data[1] = (1 << 8) - 1;
+		if (number[0] != '-')
+			data[0] = data[0] & ((1 << 7) - 1);
+		data[15] |= 1;
+		return *this;
+	}
+
+	if (number[0] == '-') {
+		setBit(0, 1);
+		number.erase(0, 1);
+	}
+	else setBit(0, 0);
+
+	if (isZeroStr(number)) {
+		*this = QFloat();
+		return *this;
+	}
+
+	int exp;
+	string sign = toStrBit(number, exp);
+
+	for (int i = 1; i <= 15; i++)
+		setBit(i, getBitInt(exp, 31 - 15 + i));
+
+	for (int i = 15 + 1; i < 15 + 112 + 1; i++)
+		setBit(i, sign[i - 15] - '0');
+
+	return (*this);
+}
+
+// Hàm xuất QFloat dưới dạng chuỗi thập phân
 string QFloat::toDec() {
-	Float res(1);
+	// Xét trường hợp các số đặc biệt
+	if (isInf()) {
+		if (isNegative()) return "-Inf";
+		return "Inf";
+	}
+	if (isNaN())
+		return "NaN";
+
+	Float res(0);
 
 	// Lấy phần dấu
 	bool sign = this->getBit(0);
@@ -675,40 +768,70 @@ string QFloat::toDec() {
 	e -= (1 << 14) - 1;
 
 	// Lấy phần trị
-	int i = 16;
-	while (i < 128 && getBit(i) == 0)
-		i++;
 
-	if (i < 128) {
-		if (e == -(1 << 14) + 1) {
-			e = -(1 << 14) + 2;
-			res = Float(0);
-		}
+	// i lưu vị trí bit 1 đầu tiên
+	int i = 0;
 
-		while (i < 128) {
-			if (getBit(i))
-				res = res + (Float(1) >> (i - 15));
+	// Trường hợp số không chuẩn
+	if (e == -(1 << 14) + 1) {
+		e = -(1 << 14) + 2;
+		// Tìm vị trí bit 1 đầu tiên
+		i = 1;
+		while (i + 15 < 128 && getBit(i + 15) == 0)
 			i++;
-		}
-
-		if (e > 0)
-			res = res << e;
-		else
-			res = res >> -e;
-	}
-	else {
-		if (e >= 0) {
-			for (int i = 0; i < e; i++) res = res.doubled();
-		}
-		else if (e == -(1 << 14) + 1) {
-			res = Float(0);
-		}
-		else {
-			for (int i = 0; i > e; i--) res = res.halved();
-		}
+		// Nếu không có, là số 0
+		if (i + 15 == 128) return "0";
 	}
 
+	// Tìm 2^i đầu tiên
+	int d = e - i;
+	Float t(1);
+	if (d < 0) t = t >> -d;
+	else t = t << d;
+
+	// Cộng 2^i đầu tiên
+	res = res + t;
+	i++;
+
+	// Các 2^i tiếp theo chỉ được cộng khi bit tại đó bật
+	while (i < 113) {
+		// 2^i = 2^(i + 1) >> 1
+		t = t >> 1;
+		if (getBit(i + 15)) res = res + t;
+		i++;
+	}
+
+	// Nếu có dấu, đổi dấu kết quả
 	if (sign) res = ~res;
 
 	return string(res);
+}
+
+// Hàm xuất QFloat dưới dạng chuỗi nhị phân
+string QFloat::DecToBinary() {
+	string s;
+	for (int i = 0; i < 16; i++) {
+		for (int j = 7; j >= 0; --j)
+			s += ((this->data[i] >> j) & 1) + '0';
+	}
+	return s;
+}
+
+// Hàm nhập QFloat bằng chuỗi nhị phân
+QFloat QFloatfromBin(string bin) {
+	QFloat res;
+	int pos = 0;
+	for (int i = 0; i < bin.size(); i++)
+		res.setBit(pos++, bin[i] - '0');
+	return res;
+}
+
+QFloat QFloatfromString(string n, string b) {
+	if (b == "2") return QFloatfromBin(n);
+	else if (b == "10") return QFloat().strDecToQFloat(n);
+}
+
+string QFloat::toString(string b) {
+	if (b == "2") return DecToBinary();
+	else if (b == "10") return toDec();
 }
