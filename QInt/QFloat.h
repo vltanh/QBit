@@ -29,6 +29,9 @@ public:
 
 	friend QFloat QFloatfromString(string, string);
 	string toString(string);
+
+	QFloat& fromBitStr(string);
+	string toBitString();
 };
 
 QFloat QFloatfromBin(string);

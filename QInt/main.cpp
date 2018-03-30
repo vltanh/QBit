@@ -1,11 +1,15 @@
 #define _CRT_SECURE_NO_WARNINGS
 
-//#define TEST_INT
-//#define TEST_FLOAT
-//#define QFLOAT
-#define QINT
+//#define RUN
+//#define DEBUG
 
-#define NUM_TEST 1000
+//#define TEST_INT
+#define TEST_FLOAT
+
+//#define QFLOAT
+//#define QINT
+
+#define NUM_TEST 100
 
 #include <iostream>
 #include <vector>
@@ -52,11 +56,15 @@ string convert(const vector<string>& opt) {
 }
 
 int main(int argc, char** argv) {
-	//ifstream inp(argv[1]);
-	//ofstream out(argv[2]);
+#ifdef RUN
+	ifstream inp(argv[1]);
+	ofstream out(argv[2]);
+#endif
 
+#ifdef DEBUG
 	ifstream inp("input_int.txt");
 	ofstream out("output_int.txt");
+#endif
 
 	string cmd;
 	while (getline(inp, cmd)) {
@@ -97,11 +105,15 @@ string convert(const vector<string>& opt) {
 }
 
 int main(int argc, char** argv) {
-	//ifstream inp(argv[1]);
-	//ofstream out(argv[2]);
+#ifdef RUN
+	ifstream inp(argv[1]);
+	ofstream out(argv[2]);
+#endif
 
+#ifdef DEBUG
 	ifstream inp("input_float.txt");
 	ofstream out("output_float.txt");
+#endif
 
 	string cmd;
 	while (getline(inp, cmd)) {
@@ -205,7 +217,7 @@ int main() {
 	vector<string> base = { "2", "10" };
 	vector<vector<string>> radix = { { "0", "1" },
 	{ "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" } };
-	vector<int> maxlen = { 128, 32 };
+	vector<int> maxlen = { 50, 32 };
 	vector<string> ope = { "+", "-", "*", "/" };
 
 	for (int i = 0; i < NUM_TEST; i++) {
@@ -216,11 +228,11 @@ int main() {
 			bool dot = false;
 
 			string res1;
-			int length = (rand() % 2 && !(p == 0)) ? (maxlen[p] / 2 + rand() % (maxlen[p] / 2)) : maxlen[p];
-			if (p == 1 && rand() % 2) res1 += "-";
+			int length = (rand() % 2) ? (maxlen[p] / 2 + rand() % (maxlen[p] / 2)) : maxlen[p];
+			if (rand() % 2) res1 += "-";
 			while (length--) {
 				res1 = res1 + radix[p][rand() % radix[p].size()];
-				if (p == 1 && !dot && rand() % 5 == 0) {
+				if (!dot && rand() % 5 == 0) {
 					res1 += '.';
 					dot = true;
 				}
@@ -229,11 +241,11 @@ int main() {
 			dot = false;
 
 			string res2;
-			length = (rand() % 2 && !(p == 0)) ? (maxlen[p] / 2 + rand() % (maxlen[p] / 2)) : maxlen[p];
-			if (p == 1 && rand() % 2) res2 += "-";
+			length = (rand() % 2) ? (maxlen[p] / 2 + rand() % (maxlen[p] / 2)) : maxlen[p];
+			if (rand() % 2) res2 += "-";
 			while (length--) {
 				res2 = res2 + radix[p][rand() % radix[p].size()];
-				if (p == 1 && !dot && rand() % 5 == 0) {
+				if (!dot && rand() % 5 == 0) {
 					res2 += '.';
 					dot = true;
 				}
@@ -249,11 +261,11 @@ int main() {
 			while (p2 == p1) p2 = rand() % base.size();
 			out << base[p1] << " " << base[p2] << " ";
 			string res;
-			int length = (rand() % 2 && !(p1 == 0)) ? (maxlen[p1] / 2 + rand() % (maxlen[p1] / 2)) : maxlen[p1];
-			if (p1 == 1 && rand() % 2) res += "-";
+			int length = (rand() % 2) ? (maxlen[p1] / 2 + rand() % (maxlen[p1] / 2)) : maxlen[p1];
+			if (rand() % 2) res += "-";
 			while (length--) {
 				res = res + radix[p1][rand() % radix[p1].size()];
-				if (p1 == 1 && !dot && rand() % 5 == 0) {
+				if (!dot && rand() % 5 == 0) {
 					res += '.';
 					dot = true;
 				}

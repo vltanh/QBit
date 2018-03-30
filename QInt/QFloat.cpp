@@ -64,9 +64,8 @@ vector<bool> mulBit(const vector<bool>& s1, const vector<bool>& s2) {
 }
 
 // Chia hai dãy bit
-
 pair<vector<bool>, vector<bool>> divBit(vector<bool> s1, vector<bool> s2) {
-	int n = max(s1.size(), s2.size());
+	int n = max(s1.size(), s2.size()) + 1;
 
 	vector<bool> A(n, 0);
 	vector<bool> Q = s1;
@@ -94,6 +93,20 @@ pair<vector<bool>, vector<bool>> divBit(vector<bool> s1, vector<bool> s2) {
 			Q[Q.size() - 1] = 1;
 		}
 	}
+
+	if (Q[0] == 1) {
+		for (int i = 0; i < Q.size(); i++)
+			Q[i] = !Q[i];
+		for (int i = Q.size() - 1; i >= 0; i--)
+			if (!Q[i]) {
+				Q[i] = 1;
+				for (int j = i + 1; j < Q.size(); j++) Q[j] = 0;
+				break;
+			}
+	}
+
+	while (Q[0] == 0 && Q.size() > 1) Q.erase(Q.begin());
+	while (A[0] == 0 && A.size() > 1) A.erase(A.begin());
 
 	return { Q, A };
 }
@@ -567,16 +580,19 @@ QFloat QFloat::operator * (const QFloat &T) {
 	// Lấy phần trị của hai số
 	vector <bool> s1, s2, s;
 	s1.clear(); s2.clear(); s.clear();
+
+	// Thêm bit 0 ở đầu để thuật toán Booth chạy đúng
+	s1.push_back(0);
+	s2.push_back(0);
+
+	// Thêm bit ẩn ở đầu, xét trường hợp số không chuẩn
+	s1.push_back(e1 != 0);
+	s2.push_back(e2 != 0);
+
 	for (int i = 16; i <= 127; i++) {
 		s1.push_back(this->getBit(i));
 		s2.push_back(T.getBit(i));
 	}
-	// Thêm bit ẩn ở đầu, xét trường hợp số không chuẩn
-	s1.insert(s1.begin(), e1 != 0);
-	s2.insert(s2.begin(), e2 != 0);
-	// Thêm bit 0 ở đầu để thuật toán Booth chạy đúng
-	s1.insert(s1.begin(), 0);
-	s2.insert(s2.begin(), 0);
 
 	// Nhân hai phần trị bằng Booth
 	s = mulBit(s1, s2);
@@ -656,39 +672,50 @@ QFloat QFloat::operator / (const QFloat &T) {
 	}
 
 	// Lấy phần trị của hai số
-	string s1, s2, s;
+	vector<bool> s1, s2, s;
+
 	s1.clear(); s2.clear(); s.clear();
-	for (int i = 16; i <= 127; i++) {
-		s1.push_back(this->getBit(i) + '0');
-		s2.push_back(T.getBit(i) + '0');
-	}
 	// Thêm số ở đầu, xét dạng chuẩn và không chuẩn
-	s1.insert(s1.begin(), (e1 != 0) + '0');
-	s2.insert(s2.begin(), (e2 != 0) + '0');
+	s1.push_back((e1 != 0));
+	s2.push_back((e2 != 0));
+	for (int i = 16; i <= 127; i++) {
+		s1.push_back(this->getBit(i));
+		s2.push_back(T.getBit(i));
+	}
 
-	QInt a = fromBin(s1), b = fromBin(s2);
-
-	// Số mũ ban đầu
 	e = e1 - e2 + (1 << 14) - 1;
+	
+	if (e1 > e2) 
+		for (int i = 0; i < e1 - e2; i++)
+			s1.push_back(0);
+	else 
+		for (int i = 0; i < e2 - e1 + 1; i++)
+			s1.push_back(0);
 
-	if (e1 > e2)
-		b = b >> (e1 - e2);
-	else
-		b = b >> (e2 - e1 + 1);
+	pair<vector<bool>, vector<bool>> t = divBit(s1, s2);
+	if (e1 - e2 == t.first.size() || e2 - e1 == t.first.size() - 1) e--;
 
-	QInt tmp = (a / b).first;
+	int i = 16;
+	int j = 1;
+	while (i <= 127 && j < t.first.size()) {
+		ans.setBit(i, t.first[j]);
+		i++; j++;
+	}
+	s1 = t.second;
+	s1.push_back(0);
 
-	if (e1 - e2 == tmp.toBin().length() || e2 - e1 == tmp.toBin().length() - 1)
-		e--;
+	while (i < 128) {
+		pair<vector<bool>, vector<bool>> res = divBit(s1, s2);
 
-	while (s.length() < 113) {
-		pair<QInt, QInt> res = a / b;
+		int j = 0;
+		while (i <= 127 && j < res.first.size()) {
+			ans.setBit(i, res.first[j]);
+			i++; j++;
+		}
 
-		tmp = res.first;
-		s = s + tmp.toBin();
-		a = res.second;
+		s1 = res.second;
 
-		a = a << 1;
+		s1.push_back(0);
 	}
 
 	// Đặt phần dấu cho kết quả
@@ -700,15 +727,12 @@ QFloat QFloat::operator / (const QFloat &T) {
 		e /= 2;
 	}
 
-	// Đặt phần trị cho kết quả
-	for (int i = 16; i <= 127; i++)
-		ans.setBit(i, s[i - 15] - '0');
-
 	return ans;
 }
 
 // Hàm nhập QFloat dưới dạng chuỗi thập phân
 QFloat& QFloat::strDecToQFloat(string number) {
+	// Kiểm tra trường hợp đặc biệt
 	if (number == "Inf" || number == "-Inf") {
 		data[0] = data[1] = (1 << 8) - 1;
 		if (number[0] != '-')
@@ -722,24 +746,27 @@ QFloat& QFloat::strDecToQFloat(string number) {
 		data[15] |= 1;
 		return *this;
 	}
+	else if (isZeroStr(number)) {
+		*this = QFloat();
+		return *this;
+	}
 
+	// Xét dấu
 	if (number[0] == '-') {
 		setBit(0, 1);
 		number.erase(0, 1);
 	}
 	else setBit(0, 0);
 
-	if (isZeroStr(number)) {
-		*this = QFloat();
-		return *this;
-	}
-
+	// Tìm phần trị và phần mũ
 	int exp;
 	string sign = toStrBit(number, exp);
 
+	// Đặt phần mũ
 	for (int i = 1; i <= 15; i++)
 		setBit(i, getBitInt(exp, 31 - 15 + i));
 
+	// Đặt phần trị
 	for (int i = 15 + 1; i < 15 + 112 + 1; i++)
 		setBit(i, sign[i - 15] - '0');
 
@@ -755,6 +782,8 @@ string QFloat::toDec() {
 	}
 	if (isNaN())
 		return "NaN";
+	if (isZero())
+		return "0";
 
 	Float res(0);
 
@@ -807,7 +836,7 @@ string QFloat::toDec() {
 	return string(res);
 }
 
-// Hàm xuất QFloat dưới dạng chuỗi nhị phân
+// Hàm xuất QFloat dưới dạng chuỗi nhị phân chuẩn IEEE
 string QFloat::DecToBinary() {
 	string s;
 	for (int i = 0; i < 16; i++) {
@@ -817,7 +846,7 @@ string QFloat::DecToBinary() {
 	return s;
 }
 
-// Hàm nhập QFloat bằng chuỗi nhị phân
+// Hàm nhập QFloat bằng chuỗi nhị phân chuẩn IEEE
 QFloat QFloatfromBin(string bin) {
 	QFloat res;
 	int pos = 0;
@@ -826,12 +855,145 @@ QFloat QFloatfromBin(string bin) {
 	return res;
 }
 
+// Nhập QFloat từ chuỗi nhị phân có dấu .
+QFloat& QFloat::fromBitStr(string bit) {
+	// Xét trường hợp đặc biệt
+	if (bit == "Inf" || bit == "-Inf" || bit == "NaN") {
+		*this = QFloat(bit);
+		return *this;
+	}
+	if (isZeroStr(bit)) {
+		operator=(QFloat());
+		return *this;
+	}
+
+	// Xét dấu
+	if (bit[0] == '-') {
+		setBit(0, 1);
+		bit.erase(0, 1);
+	}
+	else setBit(0, 0);
+
+	// Tách phần nguyên và phần thập phân
+	int pos = bit.find('.');
+	string intPart, fractionPart;
+	if (pos == string::npos) {
+		intPart = bit;
+	}
+	else {
+		intPart = bit.substr(0, pos);
+		fractionPart = bit.substr(pos + 1);
+	}
+
+	// Chuẩn hóa, loại 0 ở đầu phần nguyên
+	while (intPart[0] == '0')
+		intPart.erase(intPart.begin());
+
+	// Tìm số mũ
+	int k = (1 << 14) - 1;
+	int exp = intPart.size() - 1 + k;
+
+	// Nếu không có phần nguyên, chuẩn hóa phần thập phân
+	if (intPart == "") {
+		while (fractionPart[0] == '0' && fractionPart.size() > 1) {
+			if (exp == 1) break;
+			fractionPart.erase(fractionPart.begin());
+			exp--;
+		}
+
+		// Trường hợp số không chuẩn, chỉ lấy 112 bit tiếp
+		if (exp == 1) {
+			while (fractionPart.size() > 113)
+				fractionPart.pop_back();
+		}
+	}
+
+	// Ghép hai mạnh lại và chuẩn hóa cho đủ 112 bit
+	string res = intPart + fractionPart;
+	while (res[0] == '0') res.erase(0, 1);
+	while (res.size() < 113) res += '0';
+
+	// Nhập phần mũ
+	for (int i = 1; i <= 15; i++)
+		setBit(i, getBitInt(exp, 31 - 15 + i));
+
+	// Nhập phần trị
+	for (int i = 15 + 1; i < 15 + 112 + 1; i++)
+		setBit(i, res[i - 15] - '0');
+
+	return *this;
+}
+
+// Chuyển QFloat thành chuỗi nhị phân có dấu .
+string QFloat::toBitString() {
+	if (isInf()) {
+		if (isNegative()) return "-Inf";
+		return "Inf";
+	}
+	if (isNaN())
+		return "NaN";
+	if (isZero())
+		return "0";
+
+	// Xét dấu
+	bool sign = getBit(0);
+
+	// Lấy phần mũ
+	int e = 0;
+	for (int i = 15; i >= 1; i--) {
+		e += getBit(i) * (1 << (15 - i));
+	}
+	e -= (1 << 14) - 1;
+
+	// Lấy phần trị
+	string s;
+	for (int i = 16; i <= 127; i++) {
+		s.push_back(getBit(i) + '0');
+	}
+
+	// Thêm bit đầu, xét số không chuẩn
+	if (e == -(1 << 14) - 1)
+		s.insert(s.begin(), '0');
+	else
+		s.insert(s.begin(), '1');
+
+	while (e < 0) {
+		s = '0' + s;
+		e++;
+	}
+
+	// Thêm 0 ở đầu cho phần trị
+	int n = s.size();
+	while (e > s.size())
+		s = '0' + s;
+
+	// Thêm 0. ở đầu nếu không có phần nguyên
+	// Ngược lại, thêm dấu . vào đúng vị trí
+	if (e >= n || e == -1)
+		s = "0." + s;
+	else if (e >= 0) {
+		s.insert(s.begin() + e + 1, '.');
+	}
+
+	// Chuẩn hóa chuỗi, không có 0 hay . ở cuối
+	while (s.back() == '0') s.pop_back();
+	if (s.back() == '.') s.pop_back();
+
+	// Thêm dấu âm
+	if (sign)
+		s.insert(s.begin(), '-');
+
+	return s;
+}
+
+// Hàm nhập QFloat từ chuỗi tổng quát
 QFloat QFloatfromString(string n, string b) {
-	if (b == "2") return QFloatfromBin(n);
+	if (b == "2") return QFloat().fromBitStr(n);
 	else if (b == "10") return QFloat().strDecToQFloat(n);
 }
 
+// Hàm xuất QFloat ra chuỗi tổng quát
 string QFloat::toString(string b) {
-	if (b == "2") return DecToBinary();
+	if (b == "2") return toBitString();
 	else if (b == "10") return toDec();
 }

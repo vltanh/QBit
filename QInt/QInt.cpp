@@ -282,8 +282,8 @@ QInt QInt::operator +(const QInt& b) const {
 		int dataId = i / TYPESZ;
 		int bitId = i % TYPESZ;
 		leftover = leftover + ((data[dataId] >> (TYPESZ - 1 - bitId)) & 1) + ((b.data[dataId] >> (TYPESZ - 1 - bitId)) & 1);
-		c.data[dataId] = c.data[dataId] | ((leftover % 2) << (TYPESZ - 1 - bitId));
-		leftover = leftover / 2;
+		c.data[dataId] = c.data[dataId] | ((leftover & 1) << (TYPESZ - 1 - bitId));
+		leftover = leftover >> 1;
 	}
 	return c;
 }
@@ -292,7 +292,7 @@ QInt QInt::operator +(const QInt& b) const {
 QInt QInt::operator -(const QInt& b) const {
 	QInt c = b;
 	// a - b = a + (-b)
-	return (*this) + (QInt(~c) + fromDec("1"));
+	return (*this) + (QInt(~c) + QInt(1));
 }
 
 //  -----------------------
